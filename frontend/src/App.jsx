@@ -6,6 +6,7 @@ import "./styles/global.css"
 
 export default function App() {
 
+  //SUPPORTED LANGUAGES BY THE SpeechRecognition WEB API
   const languages = [
     { value:"de-DE", label:"Deutsch" },
     { value:"en-US", label:"US English" },
@@ -43,13 +44,14 @@ export default function App() {
 
   const translationQueueRef = useRef([]);
   const isTranslatingRef = useRef(false);
-  const latestInterimPerId = useRef({}); // Map de id => texto
+  const latestInterimPerId = useRef({});
 
   const [windowDimensions, setWindowDimensions] = useState({
     width: window.innerWidth,
     height: window.innerHeight,
   });
 
+  //RESIZE HANDLER
   useEffect(() => {
     const handleResize = () => {
       setWindowDimensions({
@@ -61,7 +63,7 @@ export default function App() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  
+  // TRANSLATION API CALL
   const translateText = async (text, from_language, to_language) => {
     try {
       const res = await fetch("https://healthcareaitranslator-1.onrender.com/translate", {
@@ -78,9 +80,9 @@ export default function App() {
   };
 
 
-
+  // LEFT SIDE SPEECH RECOGNIZER AND TRANSLATOR
   useEffect(() => {
-    const processTranslationQueue = () => {
+    const processTranslationQueue = () => { // TRANSLATION QUEUE TO IMPROVE SPEED AND BETTER CONSISTENCY
       if (isTranslatingRef.current || translationQueueRef.current.length === 0) return;
 
       isTranslatingRef.current = true;
@@ -110,7 +112,7 @@ export default function App() {
       const timestamp = Date.now();
       translationQueueRef.current.push({ id, text, timestamp });
       processTranslationQueue();
-    }, 400); // Espera 400ms antes de procesar (puedes ajustar)
+    }, 400);
 
     const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
     recognition.continuous = true;
@@ -132,7 +134,7 @@ export default function App() {
               : msg
           );
           setCurrentTranscription("");
-          setConversationOriginal(updatedOriginal);
+          setConversationOriginal(updatedOriginal); // UPDATE THE TRANSCRIPTION IN THE CONVERSATION OBJECT WHEN THE TRANSCRIPTION IS FINALIZED
 
           const finalText = toUpdate + transcript + " ";
           translationQueueRef.current.push({ id: msgId, text: finalText, timestamp: Date.now() });
@@ -140,11 +142,11 @@ export default function App() {
         } else {
           currentTranscription += transcript;
           const interimFullText = toUpdate + currentTranscription;
-          setCurrentTranscription(interimFullText);
+          setCurrentTranscription(interimFullText); // TEMPORAL TRANSCRIPTION RENDERING TO IMPROVE PERFORMANCE
 
           // Actualiza y encola con debounce
           latestInterimPerId.current[msgId] = interimFullText;
-          enqueueTranslation(msgId, interimFullText);
+          enqueueTranslation(msgId, interimFullText); // QUEUE THE TRANSCRIPTION TO WRITE IN THE TRANSCRIPTION AND TRANSLATION LIST OBJECT
         }
       }
     };
@@ -159,10 +161,12 @@ export default function App() {
 
     return () => {
       recognition.stop();
-      enqueueTranslation.cancel(); // cancela si hay algo pendiente
+      enqueueTranslation.cancel();
     };
   }, [speakLeftSide, conversationOriginal, conversationTranslated]);
   
+
+  //RIGHT SIDE SPEECH RECOGNIZER AND TRANSLATOR
   useEffect(() => {
     const processTranslationQueue = () => {
       if (isTranslatingRef.current || translationQueueRef.current.length === 0) return;
@@ -248,7 +252,7 @@ export default function App() {
   }, [speakRightSide, conversationOriginal, conversationTranslated]);
 
 
-  const talk = (side) => {
+  const talk = (side) => { // SWITCH TO MANAGE THE TRANSLATION AND TRANSCRIPTION FUNCTIONS
     if(side == "L"){
       if(!speakLeftSide){
         setConversationOriginal(prevItems => [...prevItems, {id:idCounter,ot:"",  ol:leftLang.value, side:side}])
@@ -270,7 +274,7 @@ export default function App() {
 
   useEffect
 
-  useEffect(() => {
+  useEffect(() => { // ALWAYS TO BOTTOM HANDLER
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
@@ -338,16 +342,14 @@ export default function App() {
   );
 }
 
-const speak = (lang, text) => {
-  console.log("ASD")
-  console.log(text)
+const speak = (lang, text) => { // TEXT TO SPEAK FUNCTION
   let utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = lang
   speechSynthesis.cancel();
   speechSynthesis.speak(utterance);
 };
 
-const Message = ({id, originalText, translatedText, originalLanguage, translationLanguage, side, currentTranscription, currentTranslation, idCounter}) =>{
+const Message = ({id, originalText, translatedText, originalLanguage, translationLanguage, side, currentTranscription, currentTranslation, idCounter}) =>{ // MESSAGE COMPONENT
   const originalTextAreaRef = useRef(null);
   const translatedTextAreaRef = useRef(null);
 
