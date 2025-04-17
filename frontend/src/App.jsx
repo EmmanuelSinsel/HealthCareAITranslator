@@ -64,7 +64,7 @@ export default function App() {
   
   const translateText = async (text, from_language, to_language) => {
     try {
-      const res = await fetch("http://192.168.1.64:8000/translate", {
+      const res = await fetch("https://healthcareaitranslator-1.onrender.com/translate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text:text, from_language:from_language, to_language:to_language })
